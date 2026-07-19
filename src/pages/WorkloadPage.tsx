@@ -82,54 +82,55 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
   const [hfError, setHfError] = useState<string | null>(null);
   const [hfRamBreakdown, setHfRamBreakdown] = useState<RAMBreakdownType | null>(null);
 
+  // Helper function to fetch model details
+  const fetchModelDetails = async (modelId: string) => {
+    setHfIsLoading(true);
+    setHfError(null);
+    try {
+      const details = await getModelDetails(modelId);
+      setHfModelDetails(details);
+
+      // Fetch config
+      try {
+        const config = await getModelConfig(modelId);
+        setHfModelConfig(config);
+        const defaultCtx = getDefaultContextLength(config.max_position_embeddings || 8192);
+        setHfContextLength(defaultCtx);
+      } catch (err) {
+        console.error('Failed to fetch config:', err);
+      }
+
+      // Fetch files and parse quants
+      const selectedProvider = PROVIDERS.find(p => p.id === hfSelectedProviderId);
+      if (selectedProvider) {
+        const files = await getModelFiles(modelId);
+        const compatibleFiles = filterCompatibleFiles(files, selectedProvider);
+        const quants = parseQuants(compatibleFiles, selectedProvider);
+        setHfAvailableQuants(quants);
+        if (quants.length > 0) {
+          setHfSelectedQuant(quants[0].label);
+        }
+      }
+    } catch (err) {
+      // Only show error after 5+ characters
+      if (modelId.length >= 5) {
+        setHfError('Model not found or failed to load');
+      }
+      console.error(err);
+    } finally {
+      setHfIsLoading(false);
+    }
+  };
+
   // Fetch HF model data when model is selected (only for Local Inference)
   useEffect(() => {
     if (workloadType !== WorkloadType.LOCAL_INFERENCE || !hfSelectedModelId || hfSelectedModelId.length < 5) {
       return;
     }
 
-    const fetchModelData = async () => {
-      setHfIsLoading(true);
-      setHfError(null);
-      try {
-        const details = await getModelDetails(hfSelectedModelId);
-        setHfModelDetails(details);
-
-        // Fetch config
-        try {
-          const config = await getModelConfig(hfSelectedModelId);
-          setHfModelConfig(config);
-          const defaultCtx = getDefaultContextLength(config.max_position_embeddings || 8192);
-          setHfContextLength(defaultCtx);
-        } catch (err) {
-          console.error('Failed to fetch config:', err);
-        }
-
-        // Fetch files and parse quants
-        const selectedProvider = PROVIDERS.find(p => p.id === hfSelectedProviderId);
-        if (selectedProvider) {
-          const files = await getModelFiles(hfSelectedModelId);
-          const compatibleFiles = filterCompatibleFiles(files, selectedProvider);
-          const quants = parseQuants(compatibleFiles, selectedProvider);
-          setHfAvailableQuants(quants);
-          if (quants.length > 0) {
-            setHfSelectedQuant(quants[0].label);
-          }
-        }
-      } catch (err) {
-        // Only show error after 5+ characters
-        if (hfSelectedModelId.length >= 5) {
-          setHfError('Model not found or failed to load');
-        }
-        console.error(err);
-      } finally {
-        setHfIsLoading(false);
-      }
-    };
-
     // Add a small delay to avoid fetching on every keystroke
     const timeoutId = setTimeout(() => {
-      fetchModelData();
+      fetchModelDetails(hfSelectedModelId);
     }, 500);
 
     return () => clearTimeout(timeoutId);
@@ -315,6 +316,15 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
                           setHfSelectedModelId(modelId);
                         } else if (!modelId) {
                           setHfSelectedModelId('');
+                        }
+                      }}
+                      onSelect={(modelId) => {
+                        // When model is selected from dropdown, trigger immediate fetch
+                        if (modelId && modelId.length >= 5) {
+                          // Clear any pending timeout and fetch immediately
+                          setHfIsLoading(true);
+                          setHfError(null);
+                          fetchModelDetails(modelId);
                         }
                       }}
                       disabled={hfIsLoading}

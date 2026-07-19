@@ -6,6 +6,7 @@ interface ModelSearchInputProps {
   providerOrg: string;
   value: string;
   onChange: (modelId: string) => void;
+  onSelect?: (modelId: string) => void;
   disabled?: boolean;
 }
 
@@ -20,6 +21,7 @@ export const ModelSearchInput: React.FC<ModelSearchInputProps> = ({
   providerOrg,
   value,
   onChange,
+  onSelect,
   disabled = false,
 }) => {
   const [query, setQuery] = useState(value);
@@ -100,6 +102,9 @@ export const ModelSearchInput: React.FC<ModelSearchInputProps> = ({
   const handleSelect = (modelId: string) => {
     setQuery(modelId);
     onChange(modelId);
+    if (onSelect) {
+      onSelect(modelId);
+    }
     setIsOpen(false);
   };
 
