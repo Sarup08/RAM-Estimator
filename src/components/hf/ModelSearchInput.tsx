@@ -164,19 +164,28 @@ export const ModelSearchInput: React.FC<ModelSearchInputProps> = ({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-surface-2 border border-neutral/20 rounded-lg shadow-lg max-h-96 overflow-y-auto">
-          {isSearching ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              <span className="ml-2 text-neutral">Searching...</span>
-            </div>
-          ) : results.length === 0 ? (
-            <div className="py-8 text-center text-neutral text-sm">
-              <p>No models found</p>
-              <p className="text-xs mt-1">Try a different search term</p>
-            </div>
-          ) : (
-            <ul className="py-2">
+        <div 
+          className="absolute z-50 w-full mt-1 bg-surface-2 border border-neutral/20 rounded-lg shadow-lg overflow-hidden"
+          style={{
+            maxHeight: '320px',
+            top: '100%',
+            left: 0,
+            right: 0,
+          }}
+        >
+          <div className="overflow-y-auto" style={{ maxHeight: '320px' }}>
+            {isSearching ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="ml-2 text-neutral">Searching...</span>
+              </div>
+            ) : results.length === 0 ? (
+              <div className="py-8 text-center text-neutral text-sm">
+                <p>No models found</p>
+                <p className="text-xs mt-1">Try a different search term</p>
+              </div>
+            ) : (
+              <ul className="py-2">
               {results.map((result, index) => (
                 <li
                   key={result.id}
@@ -196,9 +205,10 @@ export const ModelSearchInput: React.FC<ModelSearchInputProps> = ({
                     </div>
                   </div>
                 </li>
-              ))}
+              ))} 
             </ul>
-          )}
+            )}
+          </div>
         </div>
       )}
 
