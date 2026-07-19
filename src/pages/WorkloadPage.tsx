@@ -265,7 +265,7 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
                 key={option.value}
                 to={`/workload/${option.value}`}
                 className={`flex-1 min-w-[140px] px-4 py-3 text-sm font-medium rounded-md transition-all duration-200 text-center ${
-                  id === option.value
+                  workloadType === option.value
                     ? 'bg-primary text-white shadow-sm'
                     : 'text-neutral hover:text-white hover:bg-surface-3'
                 }`}
