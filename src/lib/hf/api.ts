@@ -75,14 +75,9 @@ export async function searchModels(
     const models: HFModel[] = await response.json();
     console.log('[HF API] Got', models.length, 'models');
     
-    // Filter to only include models from the provider org if specified
-    if (providerOrg) {
-      const filtered = models.filter(model => model.id.startsWith(providerOrg + '/'));
-      console.log('[HF API] Filtered to', filtered.length, 'models from', providerOrg);
-      return filtered;
-    }
-    
-    return models;
+    // Don't filter by org prefix - just return results
+    // The search query already includes the org to narrow results
+    return models.slice(0, limit);
   } catch (error) {
     console.error('[HF API] Error searching models:', error);
     throw error;
