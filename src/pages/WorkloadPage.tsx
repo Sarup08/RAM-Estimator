@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
@@ -16,10 +16,36 @@ import {
   ChevronDown,
   ChevronUp,
   Home,
+  Loader2,
+  Search,
 } from 'lucide-react';
 import { useAppStore } from '../store';
 import { getWorkloadLabel, WorkloadType } from '../types';
 import { PRECISION_OPTIONS, WORKLOAD_TYPE_OPTIONS } from '../constants';
+import { PROVIDERS, PROVIDER_OPTIONS, Provider } from '../constants/providers';
+import { ProviderSelector } from '../components/hf/ProviderSelector';
+import { QuantSelector } from '../components/hf/QuantSelector';
+import { ContextLengthInput } from '../components/hf/ContextLengthInput';
+import { KVCacheConfig } from '../components/hf/KVCacheConfig';
+import { RAMBreakdown } from '../components/hf/RAMBreakdown';
+import {
+  HFModelDetails,
+  HFModelConfig,
+  getModelDetails,
+  getModelFiles,
+  getModelConfig,
+} from '../lib/hf/api';
+import {
+  filterCompatibleFiles,
+  parseQuants,
+  extractModelSize,
+  formatContextLength,
+} from '../lib/hf/parsers';
+import {
+  calculateRAMBreakdown,
+  getDefaultContextLength,
+  RAMBreakdown as RAMBreakdownType,
+} from '../lib/hf/kvCache';
 
 interface WorkloadPageProps {
   workloadType: WorkloadType;
@@ -40,6 +66,102 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
 
   const [showCharts, setShowCharts] = useState(false);
   const [expandedWorkload, setExpandedWorkload] = useState<string | null>(null);
+  
+  // HF Integration State (only for Local Inference)
+  const [hfSelectedProviderId, setHfSelectedProviderId] = useState<string>('');
+  const [hfSelectedModelId, setHfSelectedModelId] = useState<string>('');
+  const [hfModelDetails, setHfModelDetails] = useState<HFModelDetails | null>(null);
+  const [hfModelConfig, setHfModelConfig] = useState<HFModelConfig | null>(null);
+  const [hfAvailableQuants, setHfAvailableQuants] = useState<any[]>([]);
+  const [hfModelSizeGB, setHfModelSizeGB] = useState<number>(0);
+  const [hfSelectedQuant, setHfSelectedQuant] = useState<string>('');
+  const [hfContextLength, setHfContextLength] = useState<number>(8192);
+  const [hfKvCacheQuant, setHfKvCacheQuant] = useState<string>('fp16');
+  const [hfIsLoading, setHfIsLoading] = useState(false);
+  const [hfError, setHfError] = useState<string | null>(null);
+  const [hfRamBreakdown, setHfRamBreakdown] = useState<RAMBreakdownType | null>(null);
+
+  // Fetch HF model data when model is selected (only for Local Inference)
+  useEffect(() => {
+    if (workloadType !== WorkloadType.LOCAL_INFERENCE || !hfSelectedModelId) {
+      return;
+    }
+
+    const fetchModelData = async () => {
+      setHfIsLoading(true);
+      setHfError(null);
+      try {
+        const details = await getModelDetails(hfSelectedModelId);
+        setHfModelDetails(details);
+
+        // Fetch config
+        try {
+          const config = await getModelConfig(hfSelectedModelId);
+          setHfModelConfig(config);
+          const defaultCtx = getDefaultContextLength(config.max_position_embeddings || 8192);
+          setHfContextLength(defaultCtx);
+        } catch (err) {
+          console.error('Failed to fetch config:', err);
+        }
+
+        // Fetch files and parse quants
+        const selectedProvider = PROVIDERS.find(p => p.id === hfSelectedProviderId);
+        if (selectedProvider) {
+          const files = await getModelFiles(hfSelectedModelId);
+          const compatibleFiles = filterCompatibleFiles(files, selectedProvider);
+          const quants = parseQuants(compatibleFiles, selectedProvider);
+          setHfAvailableQuants(quants);
+          if (quants.length > 0) {
+            setHfSelectedQuant(quants[0].label);
+          }
+        }
+      } catch (err) {
+        setHfError('Failed to fetch model details');
+        console.error(err);
+      } finally {
+        setHfIsLoading(false);
+      }
+    };
+
+    fetchModelData();
+  }, [hfSelectedModelId, hfSelectedProviderId, workloadType]);
+
+  // Update HF model size and RAM when quant or config changes
+  useEffect(() => {
+    if (workloadType !== WorkloadType.LOCAL_INFERENCE) {
+      return;
+    }
+    if (!hfModelDetails || !hfSelectedProviderId || !hfSelectedQuant) {
+      setHfModelSizeGB(0);
+      setHfRamBreakdown(null);
+      return;
+    }
+
+    try {
+      const selectedProvider = PROVIDERS.find(p => p.id === hfSelectedProviderId);
+      if (!selectedProvider) return;
+
+      const size = extractModelSize(
+        hfModelDetails.siblings || [],
+        hfSelectedQuant,
+        selectedProvider
+      );
+      setHfModelSizeGB(size);
+
+      if (hfModelConfig) {
+        const breakdown = calculateRAMBreakdown(
+          size,
+          hfModelConfig,
+          hfContextLength,
+          hfKvCacheQuant,
+          selectedProvider
+        );
+        setHfRamBreakdown(breakdown);
+      }
+    } catch (err) {
+      console.error('Failed to calculate RAM:', err);
+    }
+  }, [hfModelDetails, hfSelectedProviderId, hfSelectedQuant, hfModelConfig, hfContextLength, hfKvCacheQuant, workloadType]);
 
   // Filter workloads for this type
   const typeWorkloads = workloads?.filter(w => w.type === workloadType) || [];
@@ -47,6 +169,24 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
   const typeTotalRAM = typeBreakdowns.reduce((sum, b) => sum + b.total, 0);
 
   const handleAddWorkload = () => {
+    // For Local Inference with HF data, use HF values
+    if (workloadType === WorkloadType.LOCAL_INFERENCE && hfRamBreakdown && hfSelectedModelId) {
+      const newWorkload = {
+        id: crypto.randomUUID(),
+        type: WorkloadType.LOCAL_INFERENCE,
+        modelSize: hfModelSizeGB,
+        batchSize: hfContextLength,
+        numGPUs: 1,
+        precision: hfSelectedQuant,
+        hfModelId: hfSelectedModelId,
+        hfProvider: hfSelectedProviderId,
+        hfKVCacheQuant: hfKvCacheQuant,
+      };
+      actions.addWorkloadHF(newWorkload);
+      return;
+    }
+    
+    // Otherwise use regular form
     actions.updateForm('type', workloadType);
     actions.addWorkload();
     actions.resetForm();
@@ -138,50 +278,208 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
                 <p className="text-neutral text-sm">{description}</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <Select
-                  label="Precision"
-                  options={PRECISION_OPTIONS}
-                  value={form.precision}
-                  onChange={(val) => handleFormChange('precision', val)}
-                  error={errors.precision?.message}
-                />
-              </div>
+              {/* HF Integration for Local Inference */}
+              {workloadType === WorkloadType.LOCAL_INFERENCE && (
+                <div className="space-y-6 mb-6">
+                  {hfError && (
+                    <div className="flex items-start gap-2 p-3 bg-danger/10 border border-danger/20 rounded-lg text-danger text-sm">
+                      <span>⚠️</span>
+                      <span>{hfError}</span>
+                    </div>
+                  )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <Input
-                  label="Model Size (GB)"
-                  type="number"
-                  value={form.modelSize || ''}
-                  onChange={(e) => handleFormChange('modelSize', e.target.value === '' ? undefined : parseFloat(e.target.value))}
-                  min={0.1}
-                  step={0.1}
-                  placeholder="0.0"
-                  error={errors.modelSize?.message}
-                />
-                <Input
-                  label="Batch Size"
-                  type="number"
-                  value={form.batchSize || ''}
-                  onChange={(e) => handleFormChange('batchSize', e.target.value === '' ? undefined : parseInt(e.target.value))}
-                  min={1}
-                  placeholder="1"
-                  error={errors.batchSize?.message}
-                />
-                <Input
-                  label="Number of GPUs"
-                  type="number"
-                  value={form.numGPUs || ''}
-                  onChange={(e) => handleFormChange('numGPUs', e.target.value === '' ? undefined : parseInt(e.target.value))}
-                  min={1}
-                  placeholder="1"
-                  error={errors.numGPUs?.message}
-                />
-              </div>
+                  {/* Provider Selection */}
+                  <ProviderSelector
+                    value={hfSelectedProviderId}
+                    onChange={setHfSelectedProviderId}
+                  />
+
+                  {/* Model Search */}
+                  {hfSelectedProviderId && (
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-sm font-medium text-neutral">Model</label>
+                      <div className="relative">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral">
+                          {hfIsLoading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Search className="h-4 w-4" />
+                          )}
+                        </div>
+                        <input
+                          type="text"
+                          value={hfSelectedModelId}
+                          onChange={async (e) => {
+                            const modelId = e.target.value;
+                            setHfSelectedModelId(modelId);
+                            
+                            // Trigger search when model ID is entered
+                            if (modelId && hfSelectedProviderId) {
+                              try {
+                                setHfIsLoading(true);
+                                const details = await getModelDetails(modelId);
+                                setHfModelDetails(details);
+                                
+                                const config = await getModelConfig(modelId);
+                                setHfModelConfig(config);
+                                const defaultCtx = getDefaultContextLength(config.max_position_embeddings || 8192);
+                                setHfContextLength(defaultCtx);
+                                
+                                const selectedProvider = PROVIDERS.find(p => p.id === hfSelectedProviderId);
+                                if (selectedProvider) {
+                                  const files = await getModelFiles(modelId);
+                                  const compatibleFiles = filterCompatibleFiles(files, selectedProvider);
+                                  const quants = parseQuants(compatibleFiles, selectedProvider);
+                                  setHfAvailableQuants(quants);
+                                  if (quants.length > 0) {
+                                    setHfSelectedQuant(quants[0].label);
+                                  }
+                                }
+                              } catch (err) {
+                                setHfError('Model not found or failed to load');
+                              } finally {
+                                setHfIsLoading(false);
+                              }
+                            }
+                          }}
+                          placeholder="Enter model ID (e.g., ollama/llama-3.1-8b)"
+                          disabled={hfIsLoading}
+                          className="w-full rounded-lg border border-neutral/20 bg-surface px-4 py-2.5 pl-10 text-white placeholder:text-neutral/50 hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-200 disabled:opacity-50"
+                        />
+                      </div>
+                      {hfSelectedModelId && !hfError && (
+                        <p className="text-xs text-neutral">Enter a Hugging Face model ID (e.g., ollama/llama-3.1-8b)</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Loading State */}
+                  {hfIsLoading && (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      <span className="ml-2 text-neutral">Loading model details...</span>
+                    </div>
+                  )}
+
+                  {/* Model Info */}
+                  {hfModelDetails && hfModelConfig && !hfIsLoading && (
+                    <div className="bg-surface-2 rounded-lg p-4 border border-neutral/10">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="text-white font-display font-semibold text-lg">{hfModelDetails.id}</h3>
+                          <p className="text-neutral text-sm mt-1">by {hfModelDetails.author}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-neutral">{hfModelDetails.downloads?.toLocaleString() || 0} downloads</p>
+                          <p className="text-xs text-neutral">❤️ {hfModelDetails.likes || 0}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <span className="text-neutral">Parameters:</span>
+                          <span className="text-white ml-2">{(hfModelConfig.hidden_size ? (4 * hfModelConfig.hidden_size * hfModelConfig.hidden_size * (hfModelConfig.num_hidden_layers || 32)) / 1e9 : 0).toFixed(1)}B</span>
+                        </div>
+                        <div>
+                          <span className="text-neutral">Max Context:</span>
+                          <span className="text-white ml-2">{formatContextLength(hfModelConfig.max_position_embeddings || 0)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Quantization Selection */}
+                  {hfAvailableQuants.length > 0 && !hfIsLoading && (
+                    <QuantSelector
+                      options={hfAvailableQuants}
+                      value={hfSelectedQuant}
+                      onChange={setHfSelectedQuant}
+                    />
+                  )}
+
+                  {/* Context Length */}
+                  {hfModelConfig && !hfIsLoading && (
+                    <ContextLengthInput
+                      maxContext={hfModelConfig.max_position_embeddings || 8192}
+                      value={hfContextLength}
+                      onChange={setHfContextLength}
+                    />
+                  )}
+
+                  {/* KV Cache Configuration */}
+                  {(() => {
+                    const selectedProvider = PROVIDERS.find(p => p.id === hfSelectedProviderId);
+                    return selectedProvider?.supportsCustomKVCache && !hfIsLoading ? (
+                      <KVCacheConfig
+                        value={hfKvCacheQuant as any}
+                        onChange={setHfKvCacheQuant as any}
+                      />
+                    ) : null;
+                  })()}
+
+                  {/* RAM Breakdown */}
+                  {hfRamBreakdown && (
+                    <RAMBreakdown
+                      breakdown={hfRamBreakdown}
+                      contextLength={hfContextLength}
+                      kvCacheQuant={hfKvCacheQuant}
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* Regular Form (for non-HF or when HF not configured) */}
+              {workloadType !== WorkloadType.LOCAL_INFERENCE || !hfSelectedModelId ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <Select
+                      label="Precision"
+                      options={PRECISION_OPTIONS}
+                      value={form.precision}
+                      onChange={(val) => handleFormChange('precision', val)}
+                      error={errors.precision?.message}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <Input
+                      label="Model Size (GB)"
+                      type="number"
+                      value={form.modelSize || ''}
+                      onChange={(e) => handleFormChange('modelSize', e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                      min={0.1}
+                      step={0.1}
+                      placeholder="0.0"
+                      error={errors.modelSize?.message}
+                    />
+                    <Input
+                      label="Context Length"
+                      type="number"
+                      value={form.batchSize || ''}
+                      onChange={(e) => handleFormChange('batchSize', e.target.value === '' ? undefined : parseInt(e.target.value))}
+                      min={1}
+                      placeholder="8192"
+                      error={errors.batchSize?.message}
+                    />
+                    <Input
+                      label="Number of GPUs"
+                      type="number"
+                      value={form.numGPUs || ''}
+                      onChange={(e) => handleFormChange('numGPUs', e.target.value === '' ? undefined : parseInt(e.target.value))}
+                      min={1}
+                      placeholder="1"
+                      error={errors.numGPUs?.message}
+                    />
+                  </div>
+                </>
+              ) : null}
 
               <Button
                 onClick={handleAddWorkload}
-                disabled={!form.type || !form.modelSize || !form.batchSize || !form.numGPUs}
+                disabled={
+                  workloadType === WorkloadType.LOCAL_INFERENCE
+                    ? !hfSelectedModelId || !hfSelectedQuant || hfIsLoading
+                    : !form.type || !form.modelSize || !form.batchSize || !form.numGPUs
+                }
                 className="w-full"
               >
                 <Plus className="h-4 w-4 mr-2" />

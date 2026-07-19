@@ -14,7 +14,6 @@ import {
   Layers,
   Zap,
   Server,
-  Download,
 } from 'lucide-react';
 import { useAppStore } from '../store';
 import { getWorkloadLabel, WorkloadType } from '../types';
@@ -49,18 +48,9 @@ export const HomePage: React.FC = () => {
               RAM Estimator AI
             </h1>
           </div>
-          <div className="flex items-center gap-3">
-            <Link
-              to="/huggingface"
-              className="flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accent/90 text-white rounded-lg transition-all duration-200 shadow-sm"
-            >
-              <Download className="h-4 w-4" />
-              <span className="text-sm font-medium">Hugging Face</span>
-            </Link>
-            <div className="flex items-center gap-2 text-sm text-neutral">
-              <Info className="h-4 w-4" />
-              <span>Estimate memory for your AI workloads</span>
-            </div>
+          <div className="flex items-center gap-2 text-sm text-neutral">
+            <Info className="h-4 w-4" />
+            <span>Estimate memory for your AI workloads</span>
           </div>
         </div>
       </header>

@@ -1,7 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { HomePage } from './pages/HomePage';
 import { WorkloadPage } from './pages/WorkloadPage';
-import { HuggingFacePage } from './pages/HuggingFacePage';
 import { WorkloadType } from './types';
 import { WORKLOAD_TYPE_OPTIONS } from './constants';
 
@@ -23,7 +22,6 @@ function App() {
             }
           />
         ))}
-        <Route path="/huggingface" element={<HuggingFacePage />} />
         {/* Catch-all redirect to home */}
         <Route path="*" element={<HomePage />} />
       </Routes>
