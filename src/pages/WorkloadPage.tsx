@@ -110,17 +110,6 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* Navigation Tabs */}
         <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <Link
-              to="/"
-              className="flex items-center gap-2 px-4 py-2 bg-surface-2 hover:bg-surface-3 text-neutral hover:text-white rounded-lg transition-all duration-200"
-            >
-              <Home className="h-4 w-4" />
-              <span className="text-sm font-medium">Home</span>
-            </Link>
-            <span className="text-neutral text-sm">/</span>
-            <span className="text-white text-sm font-medium">{title}</span>
-          </div>
           <nav className="flex flex-wrap gap-2 p-2 bg-surface-2 rounded-lg">
             {WORKLOAD_TYPE_OPTIONS.map((option) => (
               <Link
