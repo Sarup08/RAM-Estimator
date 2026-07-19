@@ -91,25 +91,37 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
       const details = await getModelDetails(modelId);
       setHfModelDetails(details);
 
-      // Fetch config
+      // Fetch config (may be null for some models)
       try {
         const config = await getModelConfig(modelId);
         setHfModelConfig(config);
-        const defaultCtx = getDefaultContextLength(config.max_position_embeddings || 8192);
-        setHfContextLength(defaultCtx);
+        if (config) {
+          const defaultCtx = getDefaultContextLength(config.max_position_embeddings || 8192);
+          setHfContextLength(defaultCtx);
+        }
       } catch (err) {
-        console.error('Failed to fetch config:', err);
+        console.warn('Failed to fetch config (using defaults):', err);
       }
 
-      // Fetch files and parse quants
+      // Fetch files and parse quants (may be null for some models)
       const selectedProvider = PROVIDERS.find(p => p.id === hfSelectedProviderId);
       if (selectedProvider) {
         const files = await getModelFiles(modelId);
-        const compatibleFiles = filterCompatibleFiles(files, selectedProvider);
-        const quants = parseQuants(compatibleFiles, selectedProvider);
-        setHfAvailableQuants(quants);
-        if (quants.length > 0) {
-          setHfSelectedQuant(quants[0].label);
+        if (files) {
+          const compatibleFiles = filterCompatibleFiles(files, selectedProvider);
+          const quants = parseQuants(compatibleFiles, selectedProvider);
+          setHfAvailableQuants(quants);
+          if (quants.length > 0) {
+            setHfSelectedQuant(quants[0].label);
+          }
+        } else {
+          console.warn('No files found for model, using default quants');
+          // Set default quants based on provider
+          const defaultQuants = selectedProvider.quantizationSupport?.[0]?.quants || [];
+          setHfAvailableQuants(defaultQuants);
+          if (defaultQuants.length > 0) {
+            setHfSelectedQuant(defaultQuants[0].label);
+          }
         }
       }
     } catch (err) {

@@ -55,9 +55,21 @@ export async function searchModels(
   limit: number = 20
 ): Promise<HFModel[]> {
   try {
-    // If providerOrg is provided, search within that org
-    const searchQuery = providerOrg ? `${providerOrg} ${query}` : query;
-    const url = `${HF_API_BASE}/models?search=${encodeURIComponent(searchQuery)}&limit=${limit}&sort=downloads&direction=-1`;
+    // Search with provider org if provided, otherwise just search query
+    let searchQuery: string;
+    let url: string;
+    
+    if (providerOrg && providerOrg.trim()) {
+      // Search for provider-specific models
+      searchQuery = `${providerOrg} ${query}`;
+      url = `${HF_API_BASE}/models?search=${encodeURIComponent(searchQuery)}&limit=${limit}&sort=downloads&direction=-1`;
+      console.log('[HF API] Searching with provider:', searchQuery);
+    } else {
+      // General search
+      searchQuery = query;
+      url = `${HF_API_BASE}/models?search=${encodeURIComponent(query)}&limit=${limit}&sort=downloads&direction=-1`;
+      console.log('[HF API] General search:', query);
+    }
     
     console.log('[HF API] Fetching:', url);
     const response = await fetch(url, {
@@ -75,8 +87,7 @@ export async function searchModels(
     const models: HFModel[] = await response.json();
     console.log('[HF API] Got', models.length, 'models');
     
-    // Don't filter by org prefix - just return results
-    // The search query already includes the org to narrow results
+    // Return results
     return models.slice(0, limit);
   } catch (error) {
     console.error('[HF API] Error searching models:', error);
@@ -126,9 +137,9 @@ export async function getModelDetails(modelId: string): Promise<HFModelDetails> 
 /**
  * Get model files (siblings)
  */
-export async function getModelFiles(modelId: string): Promise<HFModelFile[]> {
+export async function getModelFiles(modelId: string): Promise<HFModelFile[] | null> {
   try {
-    const url = `${HF_API_BASE}/models/${modelId}/tree`;
+    const url = `${HF_API_BASE}/models/${encodeURIComponent(modelId)}/tree`;
     console.log('[HF API] Fetching model files:', url);
     
     const response = await fetch(url, {
@@ -139,32 +150,26 @@ export async function getModelFiles(modelId: string): Promise<HFModelFile[]> {
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[HF API] Files error:', response.status, errorText);
-      
-      if (response.status === 401) {
-        throw new Error('Authentication required for model files.');
-      }
-      if (response.status === 429) {
-        throw new Error('Rate limit exceeded. Please wait.');
-      }
-      throw new Error(`HF API error: ${response.status}`);
+      console.warn('[HF API] Files not found:', response.status);
+      // Return null instead of throwing
+      return null;
     }
     
     const files = await response.json();
     console.log('[HF API] Got', files.length, 'files');
     return files;
   } catch (error) {
-    console.error('[HF API] Error fetching model files:', error);
-    throw error;
+    console.warn('[HF API] Error fetching model files:', error);
+    return null;
   }
 }
 
 /**
  * Get model configuration
  */
-export async function getModelConfig(modelId: string): Promise<HFModelConfig> {
+export async function getModelConfig(modelId: string): Promise<HFModelConfig | null> {
   try {
-    const url = `${HF_API_BASE}/models/${modelId}/config`;
+    const url = `${HF_API_BASE}/models/${encodeURIComponent(modelId)}/config`;
     console.log('[HF API] Fetching model config:', url);
     
     const response = await fetch(url, {
@@ -175,23 +180,17 @@ export async function getModelConfig(modelId: string): Promise<HFModelConfig> {
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[HF API] Config error:', response.status, errorText);
-      
-      if (response.status === 401) {
-        throw new Error('Authentication required for model config.');
-      }
-      if (response.status === 429) {
-        throw new Error('Rate limit exceeded. Please wait.');
-      }
-      throw new Error(`HF API error: ${response.status}`);
+      console.warn('[HF API] Config not found (this is OK for some models):', response.status);
+      // Return null instead of throwing - not all models have config files
+      return null;
     }
     
     const config = await response.json();
     console.log('[HF API] Got model config');
     return config;
   } catch (error) {
-    console.error('[HF API] Error fetching model config:', error);
-    throw error;
+    console.warn('[HF API] Error fetching model config (continuing without config):', error);
+    return null;
   }
 }
 
