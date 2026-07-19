@@ -237,7 +237,7 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
     <div className="min-h-screen bg-surface">
       {/* Header */}
       <header className="border-b border-neutral/10">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <div className="flex items-center gap-3">
               <Calculator className="h-8 w-8 text-primary" />
@@ -256,7 +256,7 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Navigation Tabs */}
         <div className="mb-8">
           <nav className="flex flex-wrap gap-2 p-2 bg-surface-2 rounded-lg">
@@ -276,7 +276,7 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
           </nav>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Left: Workload Input */}
           <div className="lg:col-span-2 space-y-6">
             <Card>
