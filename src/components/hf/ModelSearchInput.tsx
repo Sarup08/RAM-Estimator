@@ -30,23 +30,27 @@ export const ModelSearchInput: React.FC<ModelSearchInputProps> = ({
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Debounced search
+  // Debounced search - only search after 3+ characters
   const debouncedSearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery || searchQuery.length < 3) {
       setResults([]);
       setIsOpen(false);
+      setIsSearching(false);
       return;
     }
 
     setIsSearching(true);
     try {
       const models = await searchModels(searchQuery, providerOrg);
-      setResults(models.slice(0, 10)); // Limit to 10 results
+      setResults(models.slice(0, 8)); // Limit to 8 results
       setIsOpen(true);
     } catch (err) {
       console.error('Search failed:', err);
-      setResults([]);
-      setIsOpen(false);
+      // Only show error after 5+ characters
+      if (searchQuery.length >= 5) {
+        setResults([]);
+        setIsOpen(false);
+      }
     } finally {
       setIsSearching(false);
     }

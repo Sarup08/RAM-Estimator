@@ -84,7 +84,7 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
 
   // Fetch HF model data when model is selected (only for Local Inference)
   useEffect(() => {
-    if (workloadType !== WorkloadType.LOCAL_INFERENCE || !hfSelectedModelId) {
+    if (workloadType !== WorkloadType.LOCAL_INFERENCE || !hfSelectedModelId || hfSelectedModelId.length < 5) {
       return;
     }
 
@@ -117,14 +117,22 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
           }
         }
       } catch (err) {
-        setHfError('Failed to fetch model details');
+        // Only show error after 5+ characters
+        if (hfSelectedModelId.length >= 5) {
+          setHfError('Model not found or failed to load');
+        }
         console.error(err);
       } finally {
         setHfIsLoading(false);
       }
     };
 
-    fetchModelData();
+    // Add a small delay to avoid fetching on every keystroke
+    const timeoutId = setTimeout(() => {
+      fetchModelData();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
   }, [hfSelectedModelId, hfSelectedProviderId, workloadType]);
 
   // Update HF model size and RAM when quant or config changes
@@ -300,36 +308,13 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
                     <ModelSearchInput
                       providerOrg={PROVIDERS.find(p => p.id === hfSelectedProviderId)?.hfOrg || ''}
                       value={hfSelectedModelId}
-                      onChange={async (modelId) => {
-                        setHfSelectedModelId(modelId);
-                        
-                        // Fetch model details when model is selected
-                        if (modelId && modelId.length > 0) {
-                          try {
-                            setHfIsLoading(true);
-                            const details = await getModelDetails(modelId);
-                            setHfModelDetails(details);
-                            
-                            const config = await getModelConfig(modelId);
-                            setHfModelConfig(config);
-                            const defaultCtx = getDefaultContextLength(config.max_position_embeddings || 8192);
-                            setHfContextLength(defaultCtx);
-                            
-                            const selectedProvider = PROVIDERS.find(p => p.id === hfSelectedProviderId);
-                            if (selectedProvider) {
-                              const files = await getModelFiles(modelId);
-                              const compatibleFiles = filterCompatibleFiles(files, selectedProvider);
-                              const quants = parseQuants(compatibleFiles, selectedProvider);
-                              setHfAvailableQuants(quants);
-                              if (quants.length > 0) {
-                                setHfSelectedQuant(quants[0].label);
-                              }
-                            }
-                          } catch (err) {
-                            setHfError('Model not found or failed to load');
-                          } finally {
-                            setHfIsLoading(false);
-                          }
+                      onChange={(modelId) => {
+                        // Only update model ID, don't fetch details here
+                        // Details will be fetched when model is selected from dropdown
+                        if (modelId && modelId.length >= 5) {
+                          setHfSelectedModelId(modelId);
+                        } else if (!modelId) {
+                          setHfSelectedModelId('');
                         }
                       }}
                       disabled={hfIsLoading}
