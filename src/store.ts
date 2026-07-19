@@ -19,6 +19,7 @@ interface AppState {
   errors: Record<string, { field: string; message: string }>;
   actions: {
     addWorkload: () => void;
+    addWorkloadHF: (workload: Workload) => void;
     removeWorkload: (id: string) => void;
     updateForm: (field: keyof FormState, value: string | number) => void;
     resetForm: () => void;
@@ -58,6 +59,13 @@ export const useAppStore = create<AppState>((set) => ({
           precision: state.form.precision as any,
         };
         const updatedWorkloads = [...state.workloads, newWorkload];
+        const { breakdowns, totalRAM } = estimateAll(updatedWorkloads);
+        return { workloads: updatedWorkloads, breakdowns, totalRAM, errors: {} };
+      }),
+
+    addWorkloadHF: (workload) =>
+      set((state) => {
+        const updatedWorkloads = [...state.workloads, workload];
         const { breakdowns, totalRAM } = estimateAll(updatedWorkloads);
         return { workloads: updatedWorkloads, breakdowns, totalRAM, errors: {} };
       }),
