@@ -24,6 +24,7 @@ import { getWorkloadLabel, WorkloadType } from '../types';
 import { PRECISION_OPTIONS, WORKLOAD_TYPE_OPTIONS } from '../constants';
 import { PROVIDERS, PROVIDER_OPTIONS, Provider } from '../constants/providers';
 import { ProviderSelector } from '../components/hf/ProviderSelector';
+import { ModelSearchInput } from '../components/hf/ModelSearchInput';
 import { QuantSelector } from '../components/hf/QuantSelector';
 import { ContextLengthInput } from '../components/hf/ContextLengthInput';
 import { KVCacheConfig } from '../components/hf/KVCacheConfig';
@@ -296,61 +297,43 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
 
                   {/* Model Search */}
                   {hfSelectedProviderId && (
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium text-neutral">Model</label>
-                      <div className="relative">
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral">
-                          {hfIsLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Search className="h-4 w-4" />
-                          )}
-                        </div>
-                        <input
-                          type="text"
-                          value={hfSelectedModelId}
-                          onChange={async (e) => {
-                            const modelId = e.target.value;
-                            setHfSelectedModelId(modelId);
+                    <ModelSearchInput
+                      providerOrg={PROVIDERS.find(p => p.id === hfSelectedProviderId)?.hfOrg || ''}
+                      value={hfSelectedModelId}
+                      onChange={async (modelId) => {
+                        setHfSelectedModelId(modelId);
+                        
+                        // Fetch model details when model is selected
+                        if (modelId && modelId.length > 0) {
+                          try {
+                            setHfIsLoading(true);
+                            const details = await getModelDetails(modelId);
+                            setHfModelDetails(details);
                             
-                            // Trigger search when model ID is entered
-                            if (modelId && hfSelectedProviderId) {
-                              try {
-                                setHfIsLoading(true);
-                                const details = await getModelDetails(modelId);
-                                setHfModelDetails(details);
-                                
-                                const config = await getModelConfig(modelId);
-                                setHfModelConfig(config);
-                                const defaultCtx = getDefaultContextLength(config.max_position_embeddings || 8192);
-                                setHfContextLength(defaultCtx);
-                                
-                                const selectedProvider = PROVIDERS.find(p => p.id === hfSelectedProviderId);
-                                if (selectedProvider) {
-                                  const files = await getModelFiles(modelId);
-                                  const compatibleFiles = filterCompatibleFiles(files, selectedProvider);
-                                  const quants = parseQuants(compatibleFiles, selectedProvider);
-                                  setHfAvailableQuants(quants);
-                                  if (quants.length > 0) {
-                                    setHfSelectedQuant(quants[0].label);
-                                  }
-                                }
-                              } catch (err) {
-                                setHfError('Model not found or failed to load');
-                              } finally {
-                                setHfIsLoading(false);
+                            const config = await getModelConfig(modelId);
+                            setHfModelConfig(config);
+                            const defaultCtx = getDefaultContextLength(config.max_position_embeddings || 8192);
+                            setHfContextLength(defaultCtx);
+                            
+                            const selectedProvider = PROVIDERS.find(p => p.id === hfSelectedProviderId);
+                            if (selectedProvider) {
+                              const files = await getModelFiles(modelId);
+                              const compatibleFiles = filterCompatibleFiles(files, selectedProvider);
+                              const quants = parseQuants(compatibleFiles, selectedProvider);
+                              setHfAvailableQuants(quants);
+                              if (quants.length > 0) {
+                                setHfSelectedQuant(quants[0].label);
                               }
                             }
-                          }}
-                          placeholder="Enter model ID (e.g., ollama/llama-3.1-8b)"
-                          disabled={hfIsLoading}
-                          className="w-full rounded-lg border border-neutral/20 bg-surface px-4 py-2.5 pl-10 text-white placeholder:text-neutral/50 hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-200 disabled:opacity-50"
-                        />
-                      </div>
-                      {hfSelectedModelId && !hfError && (
-                        <p className="text-xs text-neutral">Enter a Hugging Face model ID (e.g., ollama/llama-3.1-8b)</p>
-                      )}
-                    </div>
+                          } catch (err) {
+                            setHfError('Model not found or failed to load');
+                          } finally {
+                            setHfIsLoading(false);
+                          }
+                        }
+                      }}
+                      disabled={hfIsLoading}
+                    />
                   )}
 
                   {/* Loading State */}
