@@ -58,22 +58,33 @@ export async function searchModels(
     // If providerOrg is provided, search within that org
     const searchQuery = providerOrg ? `${providerOrg} ${query}` : query;
     const url = `${HF_API_BASE}/models?search=${encodeURIComponent(searchQuery)}&limit=${limit}&sort=downloads&direction=-1`;
-    const response = await fetch(url);
+    
+    console.log('[HF API] Fetching:', url);
+    const response = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
     
     if (!response.ok) {
-      throw new Error(`HF API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('[HF API] Error response:', response.status, errorText);
+      throw new Error(`HF API error: ${response.status} - ${errorText}`);
     }
     
     const models: HFModel[] = await response.json();
+    console.log('[HF API] Got', models.length, 'models');
     
     // Filter to only include models from the provider org if specified
     if (providerOrg) {
-      return models.filter(model => model.id.startsWith(providerOrg + '/'));
+      const filtered = models.filter(model => model.id.startsWith(providerOrg + '/'));
+      console.log('[HF API] Filtered to', filtered.length, 'models from', providerOrg);
+      return filtered;
     }
     
     return models;
   } catch (error) {
-    console.error('Error searching models:', error);
+    console.error('[HF API] Error searching models:', error);
     throw error;
   }
 }
@@ -84,18 +95,35 @@ export async function searchModels(
 export async function getModelDetails(modelId: string): Promise<HFModelDetails> {
   try {
     const url = `${HF_API_BASE}/models/${modelId}`;
-    const response = await fetch(url);
+    console.log('[HF API] Fetching model details:', url);
+    
+    const response = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
     
     if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error('Model not found');
+      const errorText = await response.text();
+      console.error('[HF API] Model details error:', response.status, errorText);
+      
+      if (response.status === 401) {
+        throw new Error('Authentication required. Please try again in a moment.');
       }
-      throw new Error(`HF API error: ${response.status}`);
+      if (response.status === 404) {
+        throw new Error('Model not found. Please check the model ID.');
+      }
+      if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please wait a moment and try again.');
+      }
+      throw new Error(`HF API error: ${response.status} - ${errorText}`);
     }
     
-    return await response.json();
+    const model = await response.json();
+    console.log('[HF API] Got model details:', modelId);
+    return model;
   } catch (error) {
-    console.error('Error fetching model details:', error);
+    console.error('[HF API] Error fetching model details:', error);
     throw error;
   }
 }
@@ -106,15 +134,32 @@ export async function getModelDetails(modelId: string): Promise<HFModelDetails> 
 export async function getModelFiles(modelId: string): Promise<HFModelFile[]> {
   try {
     const url = `${HF_API_BASE}/models/${modelId}/tree`;
-    const response = await fetch(url);
+    console.log('[HF API] Fetching model files:', url);
+    
+    const response = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[HF API] Files error:', response.status, errorText);
+      
+      if (response.status === 401) {
+        throw new Error('Authentication required for model files.');
+      }
+      if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please wait.');
+      }
       throw new Error(`HF API error: ${response.status}`);
     }
     
-    return await response.json();
+    const files = await response.json();
+    console.log('[HF API] Got', files.length, 'files');
+    return files;
   } catch (error) {
-    console.error('Error fetching model files:', error);
+    console.error('[HF API] Error fetching model files:', error);
     throw error;
   }
 }
@@ -125,15 +170,32 @@ export async function getModelFiles(modelId: string): Promise<HFModelFile[]> {
 export async function getModelConfig(modelId: string): Promise<HFModelConfig> {
   try {
     const url = `${HF_API_BASE}/models/${modelId}/config`;
-    const response = await fetch(url);
+    console.log('[HF API] Fetching model config:', url);
+    
+    const response = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[HF API] Config error:', response.status, errorText);
+      
+      if (response.status === 401) {
+        throw new Error('Authentication required for model config.');
+      }
+      if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please wait.');
+      }
       throw new Error(`HF API error: ${response.status}`);
     }
     
-    return await response.json();
+    const config = await response.json();
+    console.log('[HF API] Got model config');
+    return config;
   } catch (error) {
-    console.error('Error fetching model config:', error);
+    console.error('[HF API] Error fetching model config:', error);
     throw error;
   }
 }
