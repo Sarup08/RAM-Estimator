@@ -5,9 +5,9 @@ import { validateWorkload, hasErrors } from './lib/validation';
 
 interface FormState {
   type: string;
-  modelSize: number;
-  batchSize: number;
-  numGPUs: number;
+  modelSize: number | undefined;
+  batchSize: number | undefined;
+  numGPUs: number | undefined;
   precision: string;
 }
 
@@ -70,7 +70,15 @@ export const useAppStore = create<AppState>((set) => ({
       }),
 
     updateForm: (field, value) =>
-      set((state) => ({ form: { ...state.form, [field]: value }, errors: {} })),
+      set((state) => {
+        const currentValue = (state.form as any)[field];
+        // If value is undefined, remove the field to allow empty state
+        if (value === undefined) {
+          const { [field as string]: _, ...rest } = state.form as any;
+          return { form: { ...rest } as any, errors: {} };
+        }
+        return { form: { ...state.form, [field]: value }, errors: {} };
+      }),
 
     resetForm: () =>
       set({ form: { ...defaultForm }, errors: {} }),

@@ -116,26 +116,29 @@ export const HomePage: React.FC = () => {
                 <Input
                   label="Model Size (GB)"
                   type="number"
-                  value={form.modelSize}
-                  onChange={(e) => handleFormChange('modelSize', parseFloat(e.target.value) || 0)}
+                  value={form.modelSize || ''}
+                  onChange={(e) => handleFormChange('modelSize', e.target.value === '' ? undefined : parseFloat(e.target.value))}
                   min={0.1}
                   step={0.1}
+                  placeholder="0.0"
                   error={errors.modelSize?.message}
                 />
                 <Input
                   label="Batch Size"
                   type="number"
-                  value={form.batchSize}
-                  onChange={(e) => handleFormChange('batchSize', parseInt(e.target.value) || 0)}
+                  value={form.batchSize || ''}
+                  onChange={(e) => handleFormChange('batchSize', e.target.value === '' ? undefined : parseInt(e.target.value))}
                   min={1}
+                  placeholder="1"
                   error={errors.batchSize?.message}
                 />
                 <Input
                   label="Number of GPUs"
                   type="number"
-                  value={form.numGPUs}
-                  onChange={(e) => handleFormChange('numGPUs', parseInt(e.target.value) || 0)}
+                  value={form.numGPUs || ''}
+                  onChange={(e) => handleFormChange('numGPUs', e.target.value === '' ? undefined : parseInt(e.target.value))}
                   min={1}
+                  placeholder="1"
                   error={errors.numGPUs?.message}
                 />
               </div>
