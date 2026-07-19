@@ -179,7 +179,7 @@ export const HomePage: React.FC = () => {
 
                 <div className="space-y-3">
                   {workloads.map((w, idx) => {
-                    const breakdown = breakdowns.find((b) => workloads.indexOf(w) === breakdowns.indexOf(b)) || {
+                    const breakdown = breakdowns[idx] || {
                       baseModelRAM: 0,
                       activationRAM: 0,
                       optimizerRAM: 0,
