@@ -170,7 +170,7 @@ export const HomePage: React.FC = () => {
                   <span className="text-neutral font-medium">Grand Total RAM</span>
                   <span className="text-3xl font-data font-bold text-accent">{totalRAM.toFixed(1)} GB</span>
                 </div>
-                <RamGauge currentGB={totalRAM} maxGB={256} label="Total Memory Usage" className="mt-4" />
+                <RamGauge currentGB={totalRAM} label="Total Memory Usage" className="mt-4" />
               </div>
             )}
           </Card>

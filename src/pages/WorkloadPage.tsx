@@ -311,7 +311,7 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
               <p className="text-4xl font-data font-bold text-accent mb-4">
                 {typeTotalRAM.toFixed(1)} GB
               </p>
-              <RamGauge currentGB={typeTotalRAM} maxGB={256} label="Memory Usage" />
+              <RamGauge currentGB={typeTotalRAM} label="Memory Usage" />
             </Card>
 
             <Card>
