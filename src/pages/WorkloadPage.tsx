@@ -97,10 +97,13 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
               </h1>
             </div>
           </Link>
-          <div className="flex items-center gap-2 text-sm text-neutral">
-            <Info className="h-4 w-4" />
-            <span>Estimate memory for your AI workloads</span>
-          </div>
+          <Link
+            to="/"
+            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-all duration-200 shadow-sm"
+          >
+            <Home className="h-4 w-4" />
+            <span className="text-sm font-medium">Home</span>
+          </Link>
         </div>
       </header>
 
