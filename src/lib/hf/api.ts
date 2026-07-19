@@ -51,17 +51,27 @@ export interface HFModelDetails {
  */
 export async function searchModels(
   query: string,
+  providerOrg?: string,
   limit: number = 20
 ): Promise<HFModel[]> {
   try {
-    const url = `${HF_API_BASE}/models?search=${encodeURIComponent(query)}&limit=${limit}&sort=downloads&direction=-1`;
+    // If providerOrg is provided, search within that org
+    const searchQuery = providerOrg ? `${providerOrg} ${query}` : query;
+    const url = `${HF_API_BASE}/models?search=${encodeURIComponent(searchQuery)}&limit=${limit}&sort=downloads&direction=-1`;
     const response = await fetch(url);
     
     if (!response.ok) {
       throw new Error(`HF API error: ${response.status}`);
     }
     
-    return await response.json();
+    const models: HFModel[] = await response.json();
+    
+    // Filter to only include models from the provider org if specified
+    if (providerOrg) {
+      return models.filter(model => model.id.startsWith(providerOrg + '/'));
+    }
+    
+    return models;
   } catch (error) {
     console.error('Error searching models:', error);
     throw error;
