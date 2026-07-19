@@ -70,6 +70,7 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
   
   // HF Integration State (only for Local Inference)
   const [hfSelectedProviderId, setHfSelectedProviderId] = useState<string>('');
+  const [hfSearchQuery, setHfSearchQuery] = useState<string>('');
   const [hfSelectedModelId, setHfSelectedModelId] = useState<string>('');
   const [hfModelDetails, setHfModelDetails] = useState<HFModelDetails | null>(null);
   const [hfModelConfig, setHfModelConfig] = useState<HFModelConfig | null>(null);
@@ -308,24 +309,16 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
                   {hfSelectedProviderId && (
                     <ModelSearchInput
                       providerOrg={PROVIDERS.find(p => p.id === hfSelectedProviderId)?.hfOrg || ''}
-                      value={hfSelectedModelId}
-                      onChange={(modelId) => {
-                        // Only update model ID, don't fetch details here
-                        // Details will be fetched when model is selected from dropdown
-                        if (modelId && modelId.length >= 5) {
-                          setHfSelectedModelId(modelId);
-                        } else if (!modelId) {
-                          setHfSelectedModelId('');
-                        }
+                      value={hfSearchQuery}
+                      onChange={(query) => {
+                        // Update search query only, don't trigger model fetch
+                        setHfSearchQuery(query);
                       }}
                       onSelect={(modelId) => {
-                        // When model is selected from dropdown, trigger immediate fetch
-                        if (modelId && modelId.length >= 5) {
-                          // Clear any pending timeout and fetch immediately
-                          setHfIsLoading(true);
-                          setHfError(null);
-                          fetchModelDetails(modelId);
-                        }
+                        // Model selected from dropdown - update both query and selected ID
+                        setHfSearchQuery(modelId);
+                        setHfSelectedModelId(modelId);
+                        fetchModelDetails(modelId);
                       }}
                       disabled={hfIsLoading}
                     />
