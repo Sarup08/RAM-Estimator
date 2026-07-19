@@ -89,12 +89,34 @@ function calcMultimodalRAM(workload: Workload): WorkloadMemoryBreakdown {
   };
 }
 
+function calcLocalInferenceRAM(workload: Workload): WorkloadMemoryBreakdown {
+  const factors = WORKLOAD_FACTORS[workload.type];
+  const modelRAM = calcModelRAMGB(workload.modelSize, workload.precision);
+  // For local inference, batch size represents concurrent requests or context length multiplier
+  const activationRAM = modelRAM * factors.activationPerBatch * Math.min(workload.batchSize, 8); // Cap at 8x for context
+  const dataRAM = modelRAM * factors.dataMultiplier * Math.min(workload.batchSize, 4); // KV cache and context
+  const subtotal = modelRAM + activationRAM + dataRAM;
+  const overhead = subtotal * factors.overheadPct;
+  const total = subtotal + overhead;
+
+  return {
+    baseModelRAM: modelRAM,
+    activationRAM,
+    optimizerRAM: 0,
+    gradientRAM: 0,
+    dataRAM,
+    overhead,
+    total,
+  };
+}
+
 export const estimateWorkload = (workload: Workload): WorkloadMemoryBreakdown => {
   const typeMap = {
     llm_finetuning: calcLLMFinetuningRAM,
     embedding: calcEmbeddingRAM,
     rag: calcRAGRAM,
     multimodal: calcMultimodalRAM,
+    local_inference: calcLocalInferenceRAM,
   };
   return typeMap[workload.type](workload);
 };

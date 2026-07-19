@@ -3,6 +3,7 @@ export enum WorkloadType {
   EMBEDDING = 'embedding',
   RAG = 'rag',
   MULTIMODAL = 'multimodal',
+  LOCAL_INFERENCE = 'local_inference',
 }
 
 export enum Precision {

@@ -15,6 +15,7 @@ export const WORKLOAD_TYPE_OPTIONS = [
   { value: WorkloadType.EMBEDDING, label: 'Embedding Pipeline' },
   { value: WorkloadType.RAG, label: 'RAG System' },
   { value: WorkloadType.MULTIMODAL, label: 'Multi-modal Pipeline' },
+  { value: WorkloadType.LOCAL_INFERENCE, label: 'Local Model Inference' },
 ];
 
 // ---- Validation ranges ----
@@ -57,5 +58,12 @@ export const WORKLOAD_FACTORS = {
     gradientMultiplier: 0.25,
     dataMultiplier: 0.3,
     overheadPct: 0.2,
+  },
+  [WorkloadType.LOCAL_INFERENCE]: {
+    activationPerBatch: 0.15,  // Lower activation for inference
+    optimizerMultiplier: 0,     // No optimizer needed for inference
+    gradientMultiplier: 0,      // No gradients for inference
+    dataMultiplier: 0.2,        // Context window and KV cache
+    overheadPct: 0.1,           // 10% system overhead
   },
 };
