@@ -16,7 +16,7 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { useAppStore } from '../store';
-import { getWorkloadLabel } from '../types';
+import { getWorkloadLabel, WorkloadType } from '../types';
 import { PRECISION_OPTIONS, WORKLOAD_TYPE_OPTIONS } from '../constants';
 
 export const HomePage: React.FC = () => {
@@ -31,10 +31,15 @@ export const HomePage: React.FC = () => {
 
   const [showCharts, setShowCharts] = useState(false);
   const [expandedWorkload, setExpandedWorkload] = useState<string | null>(null);
+  const [activeWorkloadType, setActiveWorkloadType] = useState<WorkloadType>(WorkloadType.LLM_FINETUNING);
 
   const handleAddWorkload = () => {
+    // Set the workload type to the active tab before adding
+    actions.updateForm('type', activeWorkloadType);
     actions.addWorkload();
     actions.resetForm();
+    // Reset form type to empty but keep the tab active
+    actions.updateForm('type', '');
   };
 
   const handleRemoveWorkload = (id: string) => {
@@ -43,6 +48,11 @@ export const HomePage: React.FC = () => {
 
   const handleFormChange = (field: string, value: string | number) => {
     actions.updateForm(field as any, value);
+  };
+
+  const handleTabClick = (workloadType: WorkloadType) => {
+    setActiveWorkloadType(workloadType);
+    actions.updateForm('type', workloadType);
   };
 
   const handleExportCSV = () => {
@@ -91,18 +101,28 @@ export const HomePage: React.FC = () => {
           {/* Left: Workload Input */}
           <div className="lg:col-span-2 space-y-6">
             <Card>
-              <h2 className="text-xl font-display font-semibold text-white mb-6">
+              <h2 className="text-xl font-display font-semibold text-white mb-4">
                 Add Workload
               </h2>
 
+              {/* Workload Type Tabs */}
+              <div className="flex flex-wrap gap-2 mb-6 p-2 bg-surface-2 rounded-lg">
+                {WORKLOAD_TYPE_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleTabClick(option.value as WorkloadType)}
+                    className={`flex-1 min-w-[120px] px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                      activeWorkloadType === option.value
+                        ? 'bg-primary text-white shadow-sm'
+                        : 'text-neutral hover:text-white hover:bg-surface-3'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <Select
-                  label="Workload Type"
-                  options={WORKLOAD_TYPE_OPTIONS}
-                  value={form.type}
-                  onChange={(val) => handleFormChange('type', val)}
-                  error={errors.type?.message}
-                />
                 <Select
                   label="Precision"
                   options={PRECISION_OPTIONS}
