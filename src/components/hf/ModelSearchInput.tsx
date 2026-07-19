@@ -34,7 +34,10 @@ export const ModelSearchInput: React.FC<ModelSearchInputProps> = ({
 
   // Debounced search - only search after 3+ characters
   const debouncedSearch = useCallback(async (searchQuery: string) => {
+    console.log('[ModelSearch] Searching for:', searchQuery, 'with org:', providerOrg);
+    
     if (!searchQuery || searchQuery.length < 3) {
+      console.log('[ModelSearch] Query too short, clearing results');
       setResults([]);
       // Don't close if user is actively typing
       if (searchQuery.length === 0) {
@@ -44,35 +47,44 @@ export const ModelSearchInput: React.FC<ModelSearchInputProps> = ({
       return;
     }
 
+    console.log('[ModelSearch] Starting search...');
     setIsSearching(true);
     // Keep dropdown open while searching
     setIsOpen(true);
     try {
       const models = await searchModels(searchQuery, providerOrg);
+      console.log('[ModelSearch] Got results:', models.length);
       setResults(models.slice(0, 8)); // Limit to 8 results
     } catch (err) {
-      console.error('Search failed:', err);
+      console.error('[ModelSearch] Search failed:', err);
       // Only show error after 5+ characters
       if (searchQuery.length >= 5) {
         setResults([]);
         // Keep dropdown open to show error message
       }
     } finally {
+      console.log('[ModelSearch] Search complete');
       setIsSearching(false);
     }
   }, [providerOrg]);
 
   // Debounce handler
   useEffect(() => {
+    console.log('[ModelSearch] useEffect triggered, value:', value);
+    
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
 
-    if (value) {
+    if (value && value.length >= 3) {
+      console.log('[ModelSearch] Setting timeout for debounced search');
       searchTimeoutRef.current = setTimeout(() => {
         debouncedSearch(value);
       }, 300);
+    } else if (value && value.length > 0) {
+      console.log('[ModelSearch] Value too short, waiting...');
     } else {
+      console.log('[ModelSearch] Empty value, clearing');
       setResults([]);
       setIsOpen(false);
     }

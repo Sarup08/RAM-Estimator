@@ -238,7 +238,7 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
     <div className="min-h-screen bg-surface">
       {/* Header */}
       <header className="border-b border-neutral/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <div className="flex items-center gap-3">
               <Calculator className="h-8 w-8 text-primary" />
@@ -257,15 +257,15 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
         {/* Navigation Tabs */}
-        <div className="mb-8">
-          <nav className="flex flex-wrap gap-2 p-2 bg-surface-2 rounded-lg">
+        <div className="mb-6 sm:mb-8">
+          <nav className="flex flex-wrap gap-1.5 sm:gap-2 p-2 bg-surface-2 rounded-lg">
             {WORKLOAD_TYPE_OPTIONS.map((option) => (
               <Link
                 key={option.value}
                 to={`/workload/${option.value}`}
-                className={`flex-1 min-w-[140px] px-4 py-3 text-sm font-medium rounded-md transition-all duration-200 text-center ${
+                className={`flex-1 min-w-[120px] sm:min-w-[140px] px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 text-center ${
                   workloadType === option.value
                     ? 'bg-primary text-white shadow-sm'
                     : 'text-neutral hover:text-white hover:bg-surface-3'
@@ -277,7 +277,7 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
           </nav>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Left: Workload Input */}
           <div className="lg:col-span-2 space-y-6">
             <Card>
