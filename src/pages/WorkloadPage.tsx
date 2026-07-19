@@ -15,6 +15,7 @@ import {
   Download,
   ChevronDown,
   ChevronUp,
+  Home,
 } from 'lucide-react';
 import { useAppStore } from '../store';
 import { getWorkloadLabel, WorkloadType } from '../types';
@@ -88,12 +89,14 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
       {/* Header */}
       <header className="border-b border-neutral/10">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Calculator className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-display font-bold text-white">
-              RAM Estimator AI
-            </h1>
-          </div>
+          <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <div className="flex items-center gap-3">
+              <Calculator className="h-8 w-8 text-primary" />
+              <h1 className="text-2xl font-display font-bold text-white">
+                RAM Estimator AI
+              </h1>
+            </div>
+          </Link>
           <div className="flex items-center gap-2 text-sm text-neutral">
             <Info className="h-4 w-4" />
             <span>Estimate memory for your AI workloads</span>
@@ -104,6 +107,17 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* Navigation Tabs */}
         <div className="mb-8">
+          <div className="flex items-center gap-4 mb-4">
+            <Link
+              to="/"
+              className="flex items-center gap-2 px-4 py-2 bg-surface-2 hover:bg-surface-3 text-neutral hover:text-white rounded-lg transition-all duration-200"
+            >
+              <Home className="h-4 w-4" />
+              <span className="text-sm font-medium">Home</span>
+            </Link>
+            <span className="text-neutral text-sm">/</span>
+            <span className="text-white text-sm font-medium">{title}</span>
+          </div>
           <nav className="flex flex-wrap gap-2 p-2 bg-surface-2 rounded-lg">
             {WORKLOAD_TYPE_OPTIONS.map((option) => (
               <Link
