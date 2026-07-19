@@ -182,19 +182,18 @@ export const ModelSearchInput: React.FC<ModelSearchInputProps> = ({
             <X className="h-4 w-4" />
           </button>
         )}
-      </div>
 
-      {/* Dropdown */}
-      {isOpen && (
-        <div 
-          className="absolute z-50 w-full mt-1 bg-surface-2 border border-neutral/20 rounded-lg shadow-lg overflow-hidden"
-          style={{
-            maxHeight: '240px',
-            top: '100%',
-            left: 0,
-            right: 0,
-          }}
-        >
+        {/* Dropdown */}
+        {isOpen && (
+          <div 
+            className="absolute z-50 w-full mt-1 bg-surface-2 border border-neutral/20 rounded-lg shadow-lg overflow-hidden"
+            style={{
+              maxHeight: '240px',
+              top: '100%',
+              left: 0,
+              right: 0,
+            }}
+          >
           <div className="overflow-y-auto" style={{ maxHeight: '240px' }}>
             {isSearching ? (
               <div className="flex items-center justify-center py-4">
@@ -230,6 +229,7 @@ export const ModelSearchInput: React.FC<ModelSearchInputProps> = ({
           </div>
         </div>
       )}
+      </div>
 
       {query && !isOpen && (
         <p className="text-xs text-neutral">
