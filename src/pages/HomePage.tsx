@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../store';
 import { getWorkloadLabel } from '../types';
+import { PRECISION_OPTIONS, WORKLOAD_TYPE_OPTIONS } from '../constants';
 
 export const HomePage: React.FC = () => {
   const {
@@ -97,13 +98,14 @@ export const HomePage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <Select
                   label="Workload Type"
-                  options={(workloads || []).map((w) => ({ value: w.type, label: getWorkloadLabel(w.type) }))}
+                  options={WORKLOAD_TYPE_OPTIONS}
                   value={form.type}
                   onChange={(val) => handleFormChange('type', val)}
                   error={errors.type?.message}
                 />
                 <Select
                   label="Precision"
+                  options={PRECISION_OPTIONS}
                   value={form.precision}
                   onChange={(val) => handleFormChange('precision', val)}
                   error={errors.precision?.message}
