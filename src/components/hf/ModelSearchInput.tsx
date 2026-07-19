@@ -189,42 +189,39 @@ export const ModelSearchInput: React.FC<ModelSearchInputProps> = ({
         <div 
           className="absolute z-50 w-full mt-1 bg-surface-2 border border-neutral/20 rounded-lg shadow-lg overflow-hidden"
           style={{
-            maxHeight: '320px',
+            maxHeight: '240px',
             top: '100%',
             left: 0,
             right: 0,
           }}
         >
-          <div className="overflow-y-auto" style={{ maxHeight: '320px' }}>
+          <div className="overflow-y-auto" style={{ maxHeight: '240px' }}>
             {isSearching ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <span className="ml-2 text-neutral">Searching...</span>
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <span className="ml-2 text-neutral text-xs">Searching...</span>
               </div>
             ) : results.length === 0 ? (
-              <div className="py-8 text-center text-neutral text-sm">
+              <div className="py-4 text-center text-neutral text-xs">
                 <p>No models found</p>
-                <p className="text-xs mt-1">Try a different search term</p>
               </div>
             ) : (
-              <ul className="py-2">
+              <ul className="py-1">
               {results.map((result, index) => (
                 <li
                   key={result.id}
-                  className={`px-4 py-3 hover:bg-primary/10 cursor-pointer transition-colors ${
+                  className={`px-3 py-2 hover:bg-primary/10 cursor-pointer transition-colors flex items-center justify-between ${
                     index === selectedIndex ? 'bg-primary/20' : ''
                   }`}
                   onMouseDown={() => handleSelect(result.id)}
                 >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-white font-medium text-sm">{result.id}</p>
-                      <p className="text-neutral text-xs mt-1">by {result.author}</p>
-                    </div>
-                    <div className="text-right text-xs text-neutral">
-                      <p>⬇️ {result.downloads?.toLocaleString()}</p>
-                      <p>❤️ {result.likes || 0}</p>
-                    </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-medium text-xs truncate">{result.id}</p>
+                    <p className="text-neutral text-[10px] mt-0.5">by {result.author}</p>
+                  </div>
+                  <div className="text-right text-[10px] text-neutral ml-3 flex-shrink-0">
+                    <p>⬇️ {result.downloads?.toLocaleString()}</p>
+                    <p>❤️ {result.likes || 0}</p>
                   </div>
                 </li>
               ))} 
