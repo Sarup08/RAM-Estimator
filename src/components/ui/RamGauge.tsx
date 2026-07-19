@@ -9,7 +9,7 @@ interface RamGaugeProps {
 
 export const RamGauge: React.FC<RamGaugeProps> = ({
   currentGB,
-  maxGB = 256,
+  maxGB = 8192,
   label,
 }) => {
   const percentage = Math.min((currentGB / maxGB) * 100, 100);
@@ -22,11 +22,21 @@ export const RamGauge: React.FC<RamGaugeProps> = ({
     return 'bg-accent';
   };
 
+  // Format display value based on magnitude
+  const formatValue = (gb: number) => {
+    if (gb >= 1024 * 1024) {
+      return `${(gb / (1024 * 1024)).toFixed(2)} PB`;
+    } else if (gb >= 1024) {
+      return `${(gb / 1024).toFixed(2)} TB`;
+    }
+    return `${gb.toFixed(1)} GB`;
+  };
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex justify-between items-center">
         <span className="text-sm font-medium text-neutral">{label}</span>
-        <span className="text-sm font-data text-white">{currentGB.toFixed(1)} GB</span>
+        <span className="text-sm font-data text-white">{formatValue(currentGB)}</span>
       </div>
       <div className="h-2.5 bg-surface-3 rounded-full overflow-hidden">
         <div
@@ -35,7 +45,7 @@ export const RamGauge: React.FC<RamGaugeProps> = ({
         />
       </div>
       <div className="text-xs text-neutral/60 text-right">
-        Max: {maxGB} GB
+        Max: {formatValue(maxGB)}
       </div>
     </div>
   );

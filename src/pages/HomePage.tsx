@@ -1,72 +1,41 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
-import { Input } from '../components/ui/Input';
-import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
 import { RamGauge } from '../components/ui/RamGauge';
 import { RamChart } from '../components/ui/RamChart';
 import {
   Calculator,
-  Plus,
-  Trash2,
   Info,
   BarChart3,
-  Download,
-  ChevronDown,
-  ChevronUp,
+  ArrowRight,
+  Database,
+  Cpu,
+  Layers,
+  Zap,
+  Server,
 } from 'lucide-react';
 import { useAppStore } from '../store';
-import { getWorkloadLabel } from '../types';
-import { PRECISION_OPTIONS, WORKLOAD_TYPE_OPTIONS } from '../constants';
+import { getWorkloadLabel, WorkloadType } from '../types';
+import { WORKLOAD_TYPE_OPTIONS } from '../constants';
 
 export const HomePage: React.FC = () => {
   const {
     workloads,
-    form,
     breakdowns,
     totalRAM,
-    errors,
-    actions,
   } = useAppStore();
 
-  const [showCharts, setShowCharts] = useState(false);
-  const [expandedWorkload, setExpandedWorkload] = useState<string | null>(null);
-
-  const handleAddWorkload = () => {
-    actions.addWorkload();
-    actions.resetForm();
-  };
-
-  const handleRemoveWorkload = (id: string) => {
-    actions.removeWorkload(id);
-  };
-
-  const handleFormChange = (field: string, value: string | number) => {
-    actions.updateForm(field as any, value);
-  };
-
-  const handleExportCSV = () => {
-    const headers = ['Workload Type', 'Model Size (GB)', 'Precision', 'Batch Size', 'GPUs', 'Total RAM (GB)'];
-    const rows = (workloads || []).map((w) => {
-      const breakdown = breakdowns.find((b) => workloads.indexOf(w) === breakdowns.indexOf(b));
-      return [
-        getWorkloadLabel(w.type),
-        w.modelSize,
-        w.precision,
-        w.batchSize,
-        w.numGPUs,
-        breakdown?.total.toFixed(2) || 0,
-      ].join(',');
-    });
-    const csv = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `ram-estimate-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const workloadStats = WORKLOAD_TYPE_OPTIONS.map(option => {
+    const typeWorkloads = workloads?.filter(w => w.type === option.value) || [];
+    const typeBreakdowns = breakdowns?.filter((b, idx) => workloads?.[idx]?.type === option.value) || [];
+    const typeTotalRAM = typeBreakdowns.reduce((sum, b) => sum + b.total, 0);
+    return {
+      ...option,
+      count: typeWorkloads.length,
+      totalRAM: typeTotalRAM,
+    };
+  });
 
   return (
     <div className="min-h-screen bg-surface">
@@ -87,237 +56,185 @@ export const HomePage: React.FC = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left: Workload Input */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <h2 className="text-xl font-display font-semibold text-white mb-6">
-                Add Workload
-              </h2>
+        {/* Hero Section */}
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-display font-bold text-white mb-4">
+            Estimate RAM for Your AI Workloads
+          </h2>
+          <p className="text-lg text-neutral max-w-2xl mx-auto">
+            Calculate the exact memory requirements for fine-tuning, inference, RAG systems, and more.
+          </p>
+        </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <Select
-                  label="Workload Type"
-                  options={WORKLOAD_TYPE_OPTIONS}
-                  value={form.type}
-                  onChange={(val) => handleFormChange('type', val)}
-                  error={errors.type?.message}
-                />
-                <Select
-                  label="Precision"
-                  options={PRECISION_OPTIONS}
-                  value={form.precision}
-                  onChange={(val) => handleFormChange('precision', val)}
-                  error={errors.precision?.message}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <Input
-                  label="Model Size (GB)"
-                  type="number"
-                  value={form.modelSize || ''}
-                  onChange={(e) => handleFormChange('modelSize', e.target.value === '' ? undefined : parseFloat(e.target.value))}
-                  min={0.1}
-                  step={0.1}
-                  placeholder="0.0"
-                  error={errors.modelSize?.message}
-                />
-                <Input
-                  label="Batch Size"
-                  type="number"
-                  value={form.batchSize || ''}
-                  onChange={(e) => handleFormChange('batchSize', e.target.value === '' ? undefined : parseInt(e.target.value))}
-                  min={1}
-                  placeholder="1"
-                  error={errors.batchSize?.message}
-                />
-                <Input
-                  label="Number of GPUs"
-                  type="number"
-                  value={form.numGPUs || ''}
-                  onChange={(e) => handleFormChange('numGPUs', e.target.value === '' ? undefined : parseInt(e.target.value))}
-                  min={1}
-                  placeholder="1"
-                  error={errors.numGPUs?.message}
-                />
-              </div>
-
-              <Button
-                onClick={handleAddWorkload}
-                disabled={!form.type || !form.modelSize || !form.batchSize || !form.numGPUs}
-                className="w-full"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Workload
-              </Button>
-            </Card>
-
-            {/* Workloads List */}
-            {workloads.length > 0 && (
-              <Card>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-display font-semibold text-white">
-                    Your Workloads ({workloads.length})
-                  </h2>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleExportCSV}
-                      className="flex items-center gap-2"
-                    >
-                      <Download className="h-4 w-4" />
-                      Export CSV
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowCharts(!showCharts)}
-                      className="flex items-center gap-2"
-                    >
-                      {showCharts ? <ChevronDown className="h-4 w-4" /> : <BarChart3 className="h-4 w-4" />}
-                      {showCharts ? 'Hide Charts' : 'Show Charts'}
-                    </Button>
+        {/* Workload Type Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          {workloadStats.map((stat) => (
+            <Link
+              key={stat.value}
+              to={`/workload/${stat.value}`}
+              className="group"
+            >
+              <Card className="h-full hover:border-primary/50 transition-all duration-200 hover:shadow-lg">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 bg-primary/20 rounded-lg">
+                    {stat.value === WorkloadType.LLM_FINETUNING && <Database className="h-6 w-6 text-primary" />}
+                    {stat.value === WorkloadType.EMBEDDING && <Cpu className="h-6 w-6 text-primary" />}
+                    {stat.value === WorkloadType.RAG && <Layers className="h-6 w-6 text-primary" />}
+                    {stat.value === WorkloadType.MULTIMODAL && <Zap className="h-6 w-6 text-primary" />}
+                    {stat.value === WorkloadType.LOCAL_INFERENCE && <Server className="h-6 w-6 text-primary" />}
                   </div>
+                  {stat.count > 0 && (
+                    <span className="px-2 py-1 bg-accent/20 text-accent text-xs font-medium rounded-full">
+                      {stat.count} added
+                    </span>
+                  )}
                 </div>
-
-                <div className="space-y-3">
-                  {(workloads || []).map((w, idx) => {
-                    const breakdown = breakdowns[idx] || {
-                      baseModelRAM: 0,
-                      activationRAM: 0,
-                      optimizerRAM: 0,
-                      gradientRAM: 0,
-                      dataRAM: 0,
-                      overhead: 0,
-                      total: 0,
-                    };
-                    const isExpanded = expandedWorkload === w.id;
-
-                    return (
-                      <div
-                        key={w.id}
-                        className="bg-surface-3 rounded-lg overflow-hidden"
-                      >
-                        <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-surface-2 transition-colors" onClick={() => setExpandedWorkload(isExpanded ? null : w.id)}>
-                          <div className="flex items-center gap-3">
-                            <div className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
-                              <ChevronDown className="h-4 w-4 text-neutral" />
-                            </div>
-                            <div>
-                              <p className="text-white font-medium">{getWorkloadLabel(w.type)}</p>
-                              <p className="text-sm text-neutral">
-                                {w.modelSize}GB · {w.precision} · Batch {w.batchSize} · {w.numGPUs} GPU{w.numGPUs > 1 ? 's' : ''}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-accent font-data text-lg">{breakdown.total.toFixed(1)} GB</span>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleRemoveWorkload(w.id); }}
-                              className="text-neutral hover:text-danger transition-colors"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-
-                        {isExpanded && (
-                          <div className="p-4 bg-surface-2 border-t border-neutral/10">
-                            <div className="grid grid-cols-2 gap-3 text-sm">
-                              <div>
-                                <span className="text-neutral">Base Model RAM:</span>
-                                <span className="text-white ml-2">{breakdown.baseModelRAM.toFixed(1)} GB</span>
-                              </div>
-                              <div>
-                                <span className="text-neutral">Activation RAM:</span>
-                                <span className="text-white ml-2">{breakdown.activationRAM.toFixed(1)} GB</span>
-                              </div>
-                              <div>
-                                <span className="text-neutral">Optimizer RAM:</span>
-                                <span className="text-white ml-2">{breakdown.optimizerRAM.toFixed(1)} GB</span>
-                              </div>
-                              <div>
-                                <span className="text-neutral">Gradient RAM:</span>
-                                <span className="text-white ml-2">{breakdown.gradientRAM.toFixed(1)} GB</span>
-                              </div>
-                              <div>
-                                <span className="text-neutral">Data RAM:</span>
-                                <span className="text-white ml-2">{breakdown.dataRAM.toFixed(1)} GB</span>
-                              </div>
-                              <div>
-                                <span className="text-neutral">Overhead:</span>
-                                <span className="text-white ml-2">{breakdown.overhead.toFixed(1)} GB</span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                <h3 className="text-lg font-display font-semibold text-white mb-2">
+                  {stat.label}
+                </h3>
+                <p className="text-sm text-neutral mb-4">
+                  {stat.value === WorkloadType.LLM_FINETUNING && 'Fine-tune large language models with custom datasets'}
+                  {stat.value === WorkloadType.EMBEDDING && 'Generate vector embeddings for semantic search'}
+                  {stat.value === WorkloadType.RAG && 'Build retrieval-augmented generation systems'}
+                  {stat.value === WorkloadType.MULTIMODAL && 'Process text, images, and audio together'}
+                  {stat.value === WorkloadType.LOCAL_INFERENCE && 'Run models locally with Ollama or LM Studio'}
+                </p>
+                {stat.totalRAM > 0 && (
+                  <div className="pt-4 border-t border-neutral/10">
+                    <p className="text-xs text-neutral mb-1">Total RAM Required</p>
+                    <p className="text-2xl font-data font-bold text-accent">
+                      {stat.totalRAM.toFixed(1)} GB
+                    </p>
+                  </div>
+                )}
+                <div className="mt-4 flex items-center text-primary group-hover:translate-x-1 transition-transform">
+                  <span className="text-sm font-medium">Configure</span>
+                  <ArrowRight className="h-4 w-4 ml-1" />
                 </div>
               </Card>
-            )}
+            </Link>
+          ))}
+        </div>
 
-            {/* Charts */}
-            {showCharts && workloads.length > 0 && (
-              <RamChart workloads={workloads} breakdowns={breakdowns} totalRAM={totalRAM} />
-            )}
-          </div>
-
-          {/* Right: Total & Gauge */}
-          <div className="space-y-6">
-            <Card variant="elevated" className="border-accent/30">
-              <h2 className="text-lg font-display font-semibold text-white mb-2">
-                Total RAM Required
+        {/* Summary Section */}
+        {workloads && workloads.length > 0 && (
+          <Card className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-display font-semibold text-white">
+                All Workloads Summary
               </h2>
-              <p className="text-4xl font-data font-bold text-accent mb-4">
-                {totalRAM.toFixed(1)} GB
-              </p>
-              <RamGauge currentGB={totalRAM} maxGB={256} label="Memory Usage" />
-            </Card>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const allBreakdowns = breakdowns || [];
+                  const allTotal = allBreakdowns.reduce((sum, b) => sum + b.total, 0);
+                  console.log('Total RAM:', allTotal);
+                }}
+                className="flex items-center gap-2"
+              >
+                <BarChart3 className="h-4 w-4" />
+                View Details
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {workloadStats.filter(s => s.count > 0).map((stat) => {
+                const typeWorkloads = workloads.filter(w => w.type === stat.value);
+                const typeBreakdowns = breakdowns?.filter((b, idx) => workloads?.[idx]?.type === stat.value) || [];
+                const typeTotalRAM = typeBreakdowns.reduce((sum, b) => sum + b.total, 0);
+                
+                return (
+                  <Link
+                    key={stat.value}
+                    to={`/workload/${stat.value}`}
+                    className="p-4 bg-surface-2 rounded-lg hover:bg-surface-3 transition-colors"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-neutral text-sm">{stat.label}</span>
+                      <span className="text-accent font-data font-bold">{typeTotalRAM.toFixed(1)} GB</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-neutral">
+                      <span>{stat.count} workload{stat.count !== 1 ? 's' : ''}</span>
+                      <span>·</span>
+                      <span>Avg: {typeWorkloads.length > 0 ? (typeTotalRAM / typeWorkloads.length).toFixed(1) : 0} GB</span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
 
-            <Card>
-              <h2 className="text-lg font-display font-semibold text-white mb-4">Quick Reference</h2>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between text-neutral">
-                  <span>FP32 precision</span>
-                  <span className="text-white">4 bytes/param</span>
+            {totalRAM > 0 && (
+              <div className="mt-6 pt-6 border-t border-neutral/10">
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral font-medium">Grand Total RAM</span>
+                  <span className="text-3xl font-data font-bold text-accent">{totalRAM.toFixed(1)} GB</span>
                 </div>
-                <div className="flex justify-between text-neutral">
-                  <span>FP16/BF16 precision</span>
-                  <span className="text-white">2 bytes/param</span>
-                </div>
-                <div className="flex justify-between text-neutral">
-                  <span>INT8 quantization</span>
-                  <span className="text-white">1 byte/param</span>
-                </div>
-                <div className="flex justify-between text-neutral">
-                  <span>INT4 quantization</span>
-                  <span className="text-white">0.5 bytes/param</span>
-                </div>
+                <RamGauge currentGB={totalRAM} label="Total Memory Usage" className="mt-4" />
               </div>
-            </Card>
+            )}
+          </Card>
+        )}
 
-            <Card>
-              <h2 className="text-lg font-display font-semibold text-white mb-4">Tips</h2>
-              <ul className="space-y-2 text-sm text-neutral">
-                <li className="flex gap-2">
-                  <span className="text-accent">•</span>
-                  <span>Add multiple workloads for combined RAM estimate</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-accent">•</span>
-                  <span>Use INT8/INT4 for quantized models to reduce memory</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-accent">•</span>
-                  <span>Batch size affects memory linearly for fine-tuning</span>
-                </li>
-              </ul>
-            </Card>
-          </div>
+        {/* Info Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <h3 className="text-lg font-display font-semibold text-white mb-3">How It Works</h3>
+            <ul className="space-y-2 text-sm text-neutral">
+              <li className="flex gap-2">
+                <span className="text-primary">1.</span>
+                <span>Select a workload type from the cards above</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-primary">2.</span>
+                <span>Configure precision, model size, batch size, and GPUs</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-primary">3.</span>
+                <span>Add workloads and view detailed RAM breakdown</span>
+              </li>
+            </ul>
+          </Card>
+
+          <Card>
+            <h3 className="text-lg font-display font-semibold text-white mb-3">Precision Guide</h3>
+            <div className="space-y-2 text-sm text-neutral">
+              <div className="flex justify-between">
+                <span>FP32 (Full Precision)</span>
+                <span className="text-white">4 bytes/param</span>
+              </div>
+              <div className="flex justify-between">
+                <span>FP16/BF16 (Mixed)</span>
+                <span className="text-white">2 bytes/param</span>
+              </div>
+              <div className="flex justify-between">
+                <span>INT8 (Quantized)</span>
+                <span className="text-white">1 byte/param</span>
+              </div>
+              <div className="flex justify-between">
+                <span>INT4 (High Compression)</span>
+                <span className="text-white">0.5 bytes/param</span>
+              </div>
+            </div>
+          </Card>
+
+          <Card>
+            <h3 className="text-lg font-display font-semibold text-white mb-3">Tips</h3>
+            <ul className="space-y-2 text-sm text-neutral">
+              <li className="flex gap-2">
+                <span className="text-accent">•</span>
+                <span>Add multiple workloads for combined estimate</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-accent">•</span>
+                <span>Use quantization to reduce memory by 50-75%</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-accent">•</span>
+                <span>Batch size scales linearly for training workloads</span>
+              </li>
+            </ul>
+          </Card>
         </div>
       </main>
     </div>
