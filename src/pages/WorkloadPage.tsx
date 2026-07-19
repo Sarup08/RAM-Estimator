@@ -291,6 +291,47 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
               {/* HF Integration for Local Inference */}
               {workloadType === WorkloadType.LOCAL_INFERENCE && (
                 <div className="space-y-6 mb-6">
+                  {/* Always show basic form fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <Select
+                      label="Precision"
+                      options={PRECISION_OPTIONS}
+                      value={form.precision}
+                      onChange={(val) => handleFormChange('precision', val)}
+                      error={errors.precision?.message}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <Input
+                      label="Model Size (GB)"
+                      type="number"
+                      value={form.modelSize || ''}
+                      onChange={(e) => handleFormChange('modelSize', e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                      min={0.1}
+                      step={0.1}
+                      placeholder="0.0"
+                      error={errors.modelSize?.message}
+                    />
+                    <Input
+                      label="Context Length"
+                      type="number"
+                      value={form.batchSize || ''}
+                      onChange={(e) => handleFormChange('batchSize', e.target.value === '' ? undefined : parseInt(e.target.value))}
+                      min={1}
+                      placeholder="8192"
+                      error={errors.batchSize?.message}
+                    />
+                    <Input
+                      label="Number of GPUs"
+                      type="number"
+                      value={form.numGPUs || ''}
+                      onChange={(e) => handleFormChange('numGPUs', e.target.value === '' ? undefined : parseInt(e.target.value))}
+                      min={1}
+                      placeholder="1"
+                      error={errors.numGPUs?.message}
+                    />
+                  </div>
                   {hfError && (
                     <div className="flex items-start gap-2 p-3 bg-danger/10 border border-danger/20 rounded-lg text-danger text-sm">
                       <span>⚠️</span>
@@ -405,51 +446,7 @@ export const WorkloadPage: React.FC<WorkloadPageProps> = ({ workloadType, title,
                 </div>
               )}
 
-              {/* Regular Form (for non-HF or when HF not configured) */}
-              {workloadType !== WorkloadType.LOCAL_INFERENCE || !hfSelectedModelId ? (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <Select
-                      label="Precision"
-                      options={PRECISION_OPTIONS}
-                      value={form.precision}
-                      onChange={(val) => handleFormChange('precision', val)}
-                      error={errors.precision?.message}
-                    />
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <Input
-                      label="Model Size (GB)"
-                      type="number"
-                      value={form.modelSize || ''}
-                      onChange={(e) => handleFormChange('modelSize', e.target.value === '' ? undefined : parseFloat(e.target.value))}
-                      min={0.1}
-                      step={0.1}
-                      placeholder="0.0"
-                      error={errors.modelSize?.message}
-                    />
-                    <Input
-                      label="Context Length"
-                      type="number"
-                      value={form.batchSize || ''}
-                      onChange={(e) => handleFormChange('batchSize', e.target.value === '' ? undefined : parseInt(e.target.value))}
-                      min={1}
-                      placeholder="8192"
-                      error={errors.batchSize?.message}
-                    />
-                    <Input
-                      label="Number of GPUs"
-                      type="number"
-                      value={form.numGPUs || ''}
-                      onChange={(e) => handleFormChange('numGPUs', e.target.value === '' ? undefined : parseInt(e.target.value))}
-                      min={1}
-                      placeholder="1"
-                      error={errors.numGPUs?.message}
-                    />
-                  </div>
-                </>
-              ) : null}
 
               <Button
                 onClick={handleAddWorkload}

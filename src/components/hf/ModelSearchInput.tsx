@@ -36,22 +36,26 @@ export const ModelSearchInput: React.FC<ModelSearchInputProps> = ({
   const debouncedSearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery || searchQuery.length < 3) {
       setResults([]);
-      setIsOpen(false);
+      // Don't close if user is actively typing
+      if (searchQuery.length === 0) {
+        setIsOpen(false);
+      }
       setIsSearching(false);
       return;
     }
 
     setIsSearching(true);
+    // Keep dropdown open while searching
+    setIsOpen(true);
     try {
       const models = await searchModels(searchQuery, providerOrg);
       setResults(models.slice(0, 8)); // Limit to 8 results
-      setIsOpen(true);
     } catch (err) {
       console.error('Search failed:', err);
       // Only show error after 5+ characters
       if (searchQuery.length >= 5) {
         setResults([]);
-        setIsOpen(false);
+        // Keep dropdown open to show error message
       }
     } finally {
       setIsSearching(false);
@@ -149,7 +153,8 @@ export const ModelSearchInput: React.FC<ModelSearchInputProps> = ({
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onFocus={() => {
-            if (results.length > 0 && query.length >= 3) {
+            // Open dropdown when focused, even if no results yet
+            if (query.length >= 3) {
               setIsOpen(true);
             }
           }}
