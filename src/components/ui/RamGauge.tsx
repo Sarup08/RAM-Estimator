@@ -9,7 +9,7 @@ interface RamGaugeProps {
 
 export const RamGauge: React.FC<RamGaugeProps> = ({
   currentGB,
-  maxGB = 67108864, // 256*256 TB in GB (65,536 TB)
+  maxGB = 8192,
   label,
 }) => {
   const percentage = Math.min((currentGB / maxGB) * 100, 100);
