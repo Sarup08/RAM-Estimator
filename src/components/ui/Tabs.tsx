@@ -19,9 +19,10 @@ export const Tabs: React.FC<TabsProps> = ({
   onChange,
   className,
 }) => {
+  const safeTabs = tabs || [];
   return (
     <div className={clsx('flex gap-1 bg-surface p-1 rounded-lg', className)}>
-      {tabs.map((tab) => (
+      {safeTabs.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onChange(tab.id)}

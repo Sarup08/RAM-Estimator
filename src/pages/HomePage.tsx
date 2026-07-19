@@ -46,7 +46,7 @@ export const HomePage: React.FC = () => {
 
   const handleExportCSV = () => {
     const headers = ['Workload Type', 'Model Size (GB)', 'Precision', 'Batch Size', 'GPUs', 'Total RAM (GB)'];
-    const rows = workloads.map((w) => {
+    const rows = (workloads || []).map((w) => {
       const breakdown = breakdowns.find((b) => workloads.indexOf(w) === breakdowns.indexOf(b));
       return [
         getWorkloadLabel(w.type),
@@ -97,7 +97,7 @@ export const HomePage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <Select
                   label="Workload Type"
-                  options={workloads.map((w) => ({ value: w.type, label: getWorkloadLabel(w.type) }))}
+                  options={(workloads || []).map((w) => ({ value: w.type, label: getWorkloadLabel(w.type) }))}
                   value={form.type}
                   onChange={(val) => handleFormChange('type', val)}
                   error={errors.type?.message}
@@ -178,7 +178,7 @@ export const HomePage: React.FC = () => {
                 </div>
 
                 <div className="space-y-3">
-                  {workloads.map((w, idx) => {
+                  {(workloads || []).map((w, idx) => {
                     const breakdown = breakdowns[idx] || {
                       baseModelRAM: 0,
                       activationRAM: 0,

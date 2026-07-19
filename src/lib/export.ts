@@ -5,7 +5,8 @@ import { estimateWorkload } from './estimation';
 export function generateCSVReport(workloads: Workload[], breakdowns: WorkloadMemoryBreakdown[]): string {
   const headers = ['Workload Type', 'Model Size (GB)', 'Precision', 'Batch Size', 'GPUs', 'Base Model RAM (GB)', 'Activation RAM (GB)', 'Optimizer RAM (GB)', 'Gradient RAM (GB)', 'Data RAM (GB)', 'Overhead (GB)', 'Total RAM (GB)'];
 
-  const rows = workloads.map((w, idx) => {
+  const safeWorkloads = workloads || [];
+  const rows = safeWorkloads.map((w, idx) => {
     const breakdown = breakdowns[idx] || estimateWorkload(w);
     return [
       getWorkloadLabel(w.type),
@@ -31,7 +32,7 @@ export function generateJSONReport(workloads: Workload[], breakdowns: WorkloadMe
     timestamp: new Date().toISOString(),
     totalWorkloads: workloads.length,
     totalRAMGB: breakdowns.reduce((sum, b) => sum + b.total, 0),
-    workloads: workloads.map((w, idx) => ({
+    workloads: safeWorkloads.map((w, idx) => ({
       type: getWorkloadLabel(w.type),
       modelSizeGB: w.modelSize,
       precision: w.precision,

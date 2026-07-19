@@ -100,7 +100,8 @@ export const estimateWorkload = (workload: Workload): WorkloadMemoryBreakdown =>
 };
 
 export const estimateAll = (workloads: Workload[]): { breakdowns: WorkloadMemoryBreakdown[]; totalRAM: number } => {
-  const breakdowns = workloads.map(estimateWorkload);
+  const safeWorkloads = workloads || [];
+  const breakdowns = safeWorkloads.map(estimateWorkload);
   const totalRAM = breakdowns.reduce((sum, b) => sum + b.total, 0);
   return { breakdowns, totalRAM };
 };

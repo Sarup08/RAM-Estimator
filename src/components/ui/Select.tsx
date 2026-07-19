@@ -24,6 +24,7 @@ export const Select: React.FC<SelectProps> = ({
   error,
   className,
 }) => {
+  const safeOptions = options || [];
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
@@ -43,7 +44,7 @@ export const Select: React.FC<SelectProps> = ({
             className
           )}
         >
-          {options.map((option) => (
+          {safeOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>

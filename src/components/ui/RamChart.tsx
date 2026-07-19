@@ -30,18 +30,19 @@ interface RamChartProps {
 }
 
 export const RamChart: React.FC<RamChartProps> = ({ workloads, breakdowns, totalRAM }) => {
-  const barData = workloads.map((w, idx) => ({
+  const safeWorkloads = workloads || [];
+  const barData = safeWorkloads.map((w, idx) => ({
     name: getWorkloadLabel(w.type),
     totalRAM: breakdowns[idx]?.total || 0,
     baseModelRAM: breakdowns[idx]?.baseModelRAM || 0,
   }));
 
-  const pieData = workloads.map((w, idx) => ({
+  const pieData = safeWorkloads.map((w, idx) => ({
     name: getWorkloadLabel(w.type),
     value: breakdowns[idx]?.total || 0,
   }));
 
-  const radarData = workloads.map((w, idx) => {
+  const radarData = safeWorkloads.map((w, idx) => {
     const b = breakdowns[idx] || { baseModelRAM: 0, activationRAM: 0, optimizerRAM: 0, gradientRAM: 0, dataRAM: 0, overhead: 0, total: 0 };
     return {
       subject: getWorkloadLabel(w.type),
@@ -55,7 +56,7 @@ export const RamChart: React.FC<RamChartProps> = ({ workloads, breakdowns, total
     };
   });
 
-  if (workloads.length === 0) return null;
+  if (safeWorkloads.length === 0) return null;
 
   const tooltipStyle = {
     backgroundColor: '#141922',
